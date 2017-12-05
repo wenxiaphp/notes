@@ -145,3 +145,65 @@ PHP内置函数之间依然存在快慢差异
     }
  ?>
 ```
+
+## 尽量少用魔法函数
+
+- 情况描述：PHP提供的魔法函数，性能不佳
+- 为什么性能低：为了给PHP程序猿省事，PHP语言为你做了很多
+- 好的方法：尽可能规避使用PHP魔法函数
+
+### 代码对比用或者不用魔法函数
+
+举例：测试魔法函数__get()性能
+
+```php
+<?php
+    //使用魔法函数，耗时85ms
+    //不使用魔法函数，耗时53ms
+    class test{
+        public $var = '123';
+        // private $var = '123';
+        // public function __get($varname){
+        //     return $this->var;
+        // }
+    }
+    $i = 0;
+    while ($a <= 100000) {
+        $i ++ ;
+        $test = new test(); //声明类
+        $test->var; //获取var这个变量
+    }
+ ?>
+```
+
+使用命令：`time php test_magic.php`  通过该命令可以直接查看执行时间，关注返回的user时间
+返回结果：
+real 0m0.030s
+user 0m0.024s
+sys 0m0.007s
+
+### 产生额外开销的错误抑制符@
+
+情况描述：PHP提供的错误抑制符只是为了方便‘懒人’
+@的实际逻辑：在代码前、结束后，增加Opcode，忽略报错
+
+vld（PHP扩展）查看Opcode扩展
+
+安装和PHP的扩展如何安装一样
+
+测试
+准备php文件，at.php
+```php
+<?php
+    //报错找不到文件
+    file_get_contents("xxx");
+    //不会报错
+    @file_get_contents("xxx");
+
+ ?>
+```
+- 查看命令：vim at.php
+- 运行命令：php at.php
+- 通过命令：`php -dvld.active=1 -dvld.execute=0 at.php`
+【解析】-dvld.active=1 开启；-dvld.execute=0 只是查看
+结果显示的opcode begin_silince 关闭报错  end_silince 恢复报错
